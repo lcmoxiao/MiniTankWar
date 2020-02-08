@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">MiniTankWar</string>
+    <string name="game_start">GAME START!</string>
+    <string name="newagame">创建游戏！</string>
+    <string name="joingame">加入游戏！</string>
+    <string name="ip">IP</string>
+    <string name="createroom">房间创建中</string>
+    <string name="all_bullet_drawing_view">all bullet drawing view</string>
+    <string name="_1">1</string>
+    <string name="_2">2</string>
+    <string name="_3">3</string>
+</resources>
