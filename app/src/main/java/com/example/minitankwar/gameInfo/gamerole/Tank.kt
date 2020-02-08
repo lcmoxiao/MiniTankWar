@@ -13,9 +13,9 @@ import kotlinx.android.synthetic.main.activity_joingame.*
 class Tank( val tankId:Int,x: Int, y: Int, direction: Int, val tankBody: View, val tankBarrel: View) :
     Object2D(x, y, direction, dp40, dp30) {
     private var healthy:Int = 10
-    var speed:Int = 10 //移动速度
-    var angularSpeed:Int = 1 //角速度
-    var barrelDiffDirection:Int =0 //炮筒偏移角
+    private var speed:Int = 10 //移动速度
+    private val angularSpeed:Int = 1 //角速度
+    private var barrelDiffDirection:Int =0 //炮筒偏移角
 
     fun updateTankPosition(newDirection: Int): TOOLS.CrashType {
         this.copyPositionData(updatePosition(this, newDirection, speed, angularSpeed))

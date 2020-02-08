@@ -19,7 +19,7 @@ import kotlin.math.atan
 //可选项： 通过继承 doInDown() doInUp()doInHovering()，分别定义按下，抬起，悬停时的事件
 //       通过setDetectInterval(detectInterval:Long) 设置悬停事件发生频率
 //        可通过 buttonDirection 获得摇杆的相对角度
-class HoverButtonHelp(private val view: View)
+open class HoverButtonHelp(private val view: View)
 {
     private val buttonX:Int
     private val buttonY:Int
@@ -28,6 +28,7 @@ class HoverButtonHelp(private val view: View)
     private val DETECT = 100
     private var detectInterval:Long = 10  //探测的间隔时间
     private var isMoveDetecting = true
+    private var canMove = true
     var buttonDirection = 0   //摇杆的相对角度
 
     //定义按下时要做的事情
@@ -45,34 +46,69 @@ class HoverButtonHelp(private val view: View)
 
     }
 
-    fun setDetectInterval(detectInterval:Long){
+    fun setDetectInterval(detectInterval:Long):HoverButtonHelp{
         this.detectInterval=detectInterval
+        return this
+    }
+
+    fun setCanMove(canMove:Boolean):HoverButtonHelp{
+        this.canMove=canMove
+        return this
     }
 
     fun build()
     {
-        view.setOnTouchListener { v , event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    //开始探测，设置探测标志位为true
-                    isMoveDetecting = true
-                    handler.sendEmptyMessage(DETECT)
-                    opTouchX = event.rawX.toInt()
-                    opTouchY = event.rawY.toInt()
-                    doInDown()
+        if(canMove) {
+            view.setOnTouchListener { v, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        //开始探测，设置探测标志位为true
+                        isMoveDetecting = true
+                        handler.sendEmptyMessage(DETECT)
+                        opTouchX = event.rawX.toInt()
+                        opTouchY = event.rawY.toInt()
+                        doInDown()
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        setViewPosition(
+                            v,
+                            buttonX,
+                            buttonY,
+                            event.rawX.toInt() - opTouchX,
+                            event.rawY.toInt() - opTouchY
+                        )
+                        buttonDirection =
+                            getDirectionByTan(v.x.toInt(), v.y.toInt(), buttonX, buttonY)
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        isMoveDetecting = false //设置探测标志位为false，结束探测
+                        setViewPosition(v, buttonX, buttonY, 0, 0)  //摇杆归位
+                        doInUp()
+                    }
                 }
-                MotionEvent.ACTION_MOVE -> {
-                    setViewPosition(v, buttonX, buttonY, event.rawX.toInt() - opTouchX, event.rawY.toInt() - opTouchY)
-                    buttonDirection = getDirectionByTan(v.x.toInt(), v.y.toInt(), buttonX, buttonY)
-                }
-                MotionEvent.ACTION_UP -> {
-                    isMoveDetecting = false                 //设置探测标志位为false，结束探测
-                    setViewPosition(v, buttonX, buttonY,0,0)  //摇杆归位
-                    doInUp()
-                }
+                true
             }
-            true
         }
+        else
+        {
+            view.setOnTouchListener { v, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        //开始探测，设置探测标志位为true
+                        isMoveDetecting = true
+                        handler.sendEmptyMessage(DETECT)
+                        doInDown()
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        isMoveDetecting = false //设置探测标志位为false，结束探测
+                        doInUp()
+                    }
+                }
+                true
+            }
+        }
+
+
     }
 
     //这是一个会自己给自己发信息的无限循环handler

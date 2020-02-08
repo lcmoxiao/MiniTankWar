@@ -15,9 +15,7 @@ object TOOLS {
     enum class CrashType{Tank,Wall,Border,NoCrash}
     enum class GunType{Laser,Rocket,Shot}
     //Handler的探测信息标志
-    val MOVE_DETECT = 999
     val BARREL_DETECT = 998
-    val MOVE_BACK = 997
     val BULLET_SCAN = 996
 
 
@@ -87,5 +85,4 @@ object TOOLS {
         else if(ret3!=ret4)return true
         return false
     }
-
 }
