@@ -104,7 +104,11 @@ class CrashDetector{
                             i2 = 0
                             j2 = 1
                             while(i2<4){
-                                if(lineIsOnLine(bulletABCD[i2],bulletABCD[j2],tankABCD[i1],tankABCD[j1]))return true
+                                if(lineIsOnLine(bulletABCD[i2],bulletABCD[j2],tankABCD[i1],tankABCD[j1])) {
+                                    if(object2D is Bullet)
+                                    tanks[tankId].hurt(object2D .damage)
+                                    return true
+                                }
                                 i2++
                                 j2++
                                 if(j2==4)j2=0

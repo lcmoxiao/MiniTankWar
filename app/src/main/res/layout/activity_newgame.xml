@@ -5,7 +5,7 @@
 
     <TextView
         android:layout_marginTop="20dp"
-        android:id="@+id/ipnowtext"
+        android:id="@+id/meIP"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/ip"
@@ -13,34 +13,42 @@
 
     <Button
         android:layout_marginTop="20dp"
-        android:id="@+id/iploadtv"
+        android:id="@+id/createRoom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/createroom"
-        android:textSize="40sp"/>
+        android:text="创建房间"
+        android:textSize="30sp"/>
 
     <Button
-    android:layout_marginTop="20dp"
-    android:id="@+id/iptv"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="@string/ip"
-    android:textSize="30sp" />
-
-    <EditText
-        android:layout_marginTop="20dp"
-        android:id="@+id/ipeditText"
+        android:id="@+id/joinRoom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="127.0.0.1"
+        android:layout_marginTop="20dp"
+        android:text="加入房间"
         android:textSize="30sp" />
 
     <EditText
         android:layout_marginTop="20dp"
-        android:id="@+id/editText"
+        android:id="@+id/joinIp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="qweqweqwe"
+        android:text="192.168.3.18"
+        android:textSize="30sp" />
+
+    <Button
+        android:visibility="invisible"
+        android:id="@+id/startgame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="开始游戏"
+        android:textSize="30sp" />
+
+    <Button
+        android:visibility="invisible"
+        android:id="@+id/readygame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="准备"
         android:textSize="30sp" />
 
 

@@ -4,30 +4,47 @@ import android.content.res.Resources
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
-import com.example.minitankwar.gameInfo.gamerole.Tank
+import org.json.JSONObject
+import java.io.*
+import java.net.*
+import java.util.*
 import kotlin.math.abs
 import kotlin.math.atan
-import kotlin.math.max
-import kotlin.math.min
 
 object TOOLS {
 
     enum class CrashType{Tank,Wall,Border,NoCrash}
     enum class GunType{Laser,Rocket,Shot}
-    //Handler的探测信息标志
-    val BARREL_DETECT = 998
-    val BULLET_SCAN = 996
+
+    var tmpTankID:Int = 0
+    var gameMode:Int = 0   //0单人 1 双人
+    var listenSocket  = DatagramSocket(12306)
+    lateinit var listenPacket :DatagramPacket
+    val sendSocket = DatagramSocket(12307)
+    lateinit var sendPacket :DatagramPacket
+
+    val dp5 = dp(5)
+    val dp10 = dp(10)
+    val dp13 = dp(13)
+    val dp15 = dp(15)
+    val dp30 = dp(30)
+    val dp40 = dp(40)
+    val dp250 = dp(250)
+    val dp410 = dp(410)
 
 
-    val dp5 = dp2px(5)
-    val dp10 = dp2px(10)
-    val dp13 = dp2px(13)
-    val dp15 = dp2px(15)
-    val dp30 = dp2px(30)
-    val dp40 = dp2px(40)
-    val dp410 = dp2px(410)
+    fun Loge(xx:String)
+    {
+        Log.e("123",""+xx)
+    }
 
-    private fun dp2px(dpValue: Int): Int {
+    fun Loge(x:Int,xx:String)
+    {
+        Log.e("123",x.toString()+" "+xx)
+    }
+
+
+    fun dp(dpValue: Int): Int {
         val scale = Resources.getSystem().displayMetrics.density
         return (dpValue * scale + 0.5f).toInt()
     }
@@ -53,6 +70,33 @@ object TOOLS {
         v.layoutParams = params
     }
 
+    // 根据Int获取子弹类型
+    fun getBulletType(type:Int):TOOLS.GunType
+    {
+        when(type){
+            1->return TOOLS.GunType.Shot
+            2->return TOOLS.GunType.Rocket
+            3->return TOOLS.GunType.Laser
+            else-> return TOOLS.GunType.Shot
+        }
+    }
+
+    // 根据Int获取子弹类型
+    fun getBulletTypeInt(type:GunType):Int
+    {
+        return when(type){
+            GunType.Shot-> 1
+            GunType.Rocket-> 2
+            GunType.Laser-> 3
+        }
+    }
+
+
+    //从Json中用String获取int
+    fun getIntByStringFromJson(jsonObject: JSONObject, string: String):Int
+    {
+        return Integer.parseInt(jsonObject.getString(string))
+    }
 
 
     fun setViewPosition(v: View, x:Int, y:Int, diffX:Int, diffY:Int){
@@ -85,4 +129,65 @@ object TOOLS {
         else if(ret3!=ret4)return true
         return false
     }
+
+    fun getIpAddressString(): String? {
+        try {
+            val enNetI: Enumeration<NetworkInterface> = NetworkInterface.getNetworkInterfaces()
+            while (enNetI.hasMoreElements()) {
+                val netI: NetworkInterface = enNetI.nextElement()
+                val enumIpAddr: Enumeration<InetAddress> = netI.inetAddresses
+                while (enumIpAddr.hasMoreElements()) {
+                    val inetAddress: InetAddress = enumIpAddr.nextElement()
+                    if (inetAddress is Inet4Address && !inetAddress.isLoopbackAddress()) {
+                        return inetAddress.getHostAddress()
+                    }
+                }
+            }
+        } catch (e: SocketException) {
+            e.printStackTrace()
+        }
+        return "0.0.0.0"
+    }
+
+    //1.发送的字符，2.发送使用的DatagramSocket
+    fun send(str: String, socket: DatagramSocket, address:InetAddress, port:Int){
+        val bytes1 = str.toByteArray()
+        val p = DatagramPacket(bytes1, bytes1.size, address, port)
+        socket.send(p)
+    }
+
+    //1.发送的字符，2.发送使用的DatagramSocket
+    fun send(bytes1: ByteArray, socket: DatagramSocket, address:InetAddress, port:Int){
+        val p = DatagramPacket(bytes1, bytes1.size, address, port)
+        socket.send(p)
+    }
+
+    //1.接受使用的字符，2.接受使用的字符串
+    fun recv(socket: DatagramSocket, receiveBuf: ByteArray): DatagramPacket {
+        val receiverPacket = DatagramPacket(receiveBuf, receiveBuf.size)
+        socket.receive(receiverPacket)
+        return receiverPacket
+    }
+
+    fun objectToByteArray(obj:Any):ByteArray {
+        val bytes :ByteArray
+        val objectOutputStream:ObjectOutputStream
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        objectOutputStream = ObjectOutputStream(byteArrayOutputStream)
+        objectOutputStream.writeObject(obj)
+        objectOutputStream.flush()
+        bytes = byteArrayOutputStream.toByteArray()
+        return bytes
+    }
+
+    fun byteArrayToObject(bytes :ByteArray):Any {
+        val obj:Any
+        val objectInputStream: ObjectInputStream
+        val byteArrayInputStream = ByteArrayInputStream(bytes)
+        objectInputStream = ObjectInputStream(byteArrayInputStream)
+        obj = objectInputStream.readObject()
+        return obj
+    }
+
+
 }

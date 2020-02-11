@@ -25,7 +25,7 @@ open class HoverButtonHelp(private val view: View)
     private val buttonY:Int
     private var opTouchX:Int =0
     private var opTouchY:Int =0
-    private val DETECT = 100
+    private val handlerMsg = 100
     private var detectInterval:Long = 10  //探测的间隔时间
     private var isMoveDetecting = true
     private var canMove = true
@@ -64,7 +64,7 @@ open class HoverButtonHelp(private val view: View)
                     MotionEvent.ACTION_DOWN -> {
                         //开始探测，设置探测标志位为true
                         isMoveDetecting = true
-                        handler.sendEmptyMessage(DETECT)
+                        handler.sendEmptyMessage(handlerMsg)
                         opTouchX = event.rawX.toInt()
                         opTouchY = event.rawY.toInt()
                         doInDown()
@@ -91,12 +91,12 @@ open class HoverButtonHelp(private val view: View)
         }
         else
         {
-            view.setOnTouchListener { v, event ->
+            view.setOnTouchListener { _, event ->
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         //开始探测，设置探测标志位为true
                         isMoveDetecting = true
-                        handler.sendEmptyMessage(DETECT)
+                        handler.sendEmptyMessage(handlerMsg)
                         doInDown()
                     }
                     MotionEvent.ACTION_UP -> {
@@ -114,7 +114,7 @@ open class HoverButtonHelp(private val view: View)
     //这是一个会自己给自己发信息的无限循环handler
     private var handler = Handler {
         when (it.what) {
-            DETECT ->
+            handlerMsg ->
             {
                 hoverJudge()
                 true
@@ -128,7 +128,7 @@ open class HoverButtonHelp(private val view: View)
         if(isMoveDetecting)
         {
             doInHovering()
-            handler.sendEmptyMessageDelayed(DETECT,detectInterval)
+            handler.sendEmptyMessageDelayed(handlerMsg,detectInterval)
         }
     }
 
