@@ -1,6 +1,5 @@
 package com.example.minitankwar.activity
 
-
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
@@ -9,21 +8,18 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.minitankwar.CrashDetector.Companion.bullets
 import com.example.minitankwar.CrashDetector.Companion.tanks
 import com.example.minitankwar.CrashDetector.Companion.walls
+import com.example.minitankwar.HoverButtonHelp
 import com.example.minitankwar.R
 import com.example.minitankwar.TOOLS
+import com.example.minitankwar.TOOLS.Loge
 import com.example.minitankwar.TOOLS.dp250
 import com.example.minitankwar.TOOLS.dp40
 import com.example.minitankwar.TOOLS.gameMode
 import com.example.minitankwar.TOOLS.getBulletType
 import com.example.minitankwar.TOOLS.getBulletTypeInt
 import com.example.minitankwar.TOOLS.getIntByStringFromJson
-import com.example.minitankwar.TOOLS.listenPacket
-import com.example.minitankwar.TOOLS.listenSocket
-import com.example.minitankwar.TOOLS.recv
-import com.example.minitankwar.TOOLS.send
-import com.example.minitankwar.TOOLS.sendSocket
 import com.example.minitankwar.TOOLS.tmpTankID
-import com.example.minitankwar.gameInfo.gamerole.Bullet
+import com.example.minitankwar.UDPManager
 import com.example.minitankwar.gameInfo.gamerole.Tank
 import com.example.minitankwar.gameInfo.gamerole.Wall
 import com.example.minitankwar.gameInfo.gamerole.buttle.LaserGun
@@ -34,62 +30,47 @@ import org.json.JSONObject
 
 
 class GameActivity :AppCompatActivity(){
-
-    private val listenBuf = ByteArray(1024)
-
     private var tankBody  = ArrayList<View>()
     private var tankBarrel   = ArrayList<View>()
     private val myBulletsViews = ArrayList<View>()
-
+    private var lastShotTime:Long = 0    //上一次射击的时间
+    private var lastShotInterval:Long = 0    //射击冷却时间
     private val scanIng = 999
     //子弹类别
     private var gunType = TOOLS.GunType.Shot
     private var lastGunType = TOOLS.GunType.Shot
     //摇杆初始化
-    inner class MoveButton(view:View):HoverButtonHelp(view){
+    inner class MoveButton(view:View): HoverButtonHelp(view){
         override fun doInHovering() {
-            val tmpPosition = tanks[tankId].clone()
-            when (tanks[tankId].updateTankPosition(this.buttonDirection,tankBody[tankId],tankBarrel[tankId])) {
-                TOOLS.CrashType.NoCrash -> {
+            val tmpS = tanks[tankId].shape.clone()
 
-                }
-                else -> tanks[tankId].copyPositionData(tmpPosition)
+            if (tanks[tankId].updateTankPosition(buttonDirection,tankBody[tankId],tankBarrel[tankId]) !=TOOLS.CrashType.NoCrash) {
+                tanks[tankId].shape.copyPosAndDir(tmpS)
             }
-            Thread{
-                if(gameMode==1) { sendMyMsg(0) }
-            }.start()
+            Thread{ if(gameMode==1) { sendMyMsg(0) } }.start()
         }
     }
-
-    inner class BackButton(view:View):HoverButtonHelp(view){
+    inner class BackButton(view:View): HoverButtonHelp(view){
         override fun doInDown() {
             opbuttonbrand.setImageDrawable(getDrawable(R.drawable.pink_circle))
         }
         override fun doInHovering() {
-            val tmpPosition = tanks[tankId].clone()
-            when (tanks[tankId].moveBack(tankBody[tankId],tankBarrel[tankId])) {
-                TOOLS.CrashType.NoCrash -> {
-
-                }
-                else -> tanks[tankId].copyPositionData(tmpPosition)
-            }
-            Thread{
-                if(gameMode==1) { sendMyMsg(0) }
-            }.start()
+            val tmpS = tanks[tankId].shape.clone()
+            if (tanks[tankId].moveBack(tankBody[tankId],tankBarrel[tankId]) !=TOOLS.CrashType.NoCrash)
+                tanks[tankId].shape.copyPosAndDir(tmpS)
+            Thread{ if(gameMode==1) { sendMyMsg(0) } }.start()
         }
         override fun doInUp() {
             opbuttonbrand.setImageDrawable(getDrawable(R.drawable.opbuttonbrand))
         }
     }
-    inner class BarrelButton(view:View):HoverButtonHelp(view){
+    inner class BarrelButton(view:View): HoverButtonHelp(view){
         override fun doInHovering() {
             if(tanks[tankId].getBarrelDirection() != buttonDirection) {
                 tanks[tankId].updateBarrelDiffDirection(buttonDirection)
                 tankBarrel[tankId].rotation = -tanks[tankId].getBarrelDirection().toFloat()
             }
-            Thread{
-                if(gameMode==1) { sendMyMsg(0) }
-            }.start()
+            if(gameMode==1) Thread{ sendMyMsg(0) }.start()
         }
     }
 
@@ -107,6 +88,7 @@ class GameActivity :AppCompatActivity(){
         bulletScanHandler.sendEmptyMessage(scanIng)
         tankScanHandler.sendEmptyMessage(scanIng)
         //信息接收
+        if(gameMode==1)
         Thread{
             while(true) {
                 recvMsg()
@@ -138,22 +120,19 @@ class GameActivity :AppCompatActivity(){
     }
 
     //初始化选中散弹按钮，刷新View
-    private fun initGunButtonView()
-    {
+    private fun initGunButtonView() {
         buttonbullet1.background = getDrawable(R.drawable.checkbullet)
     }
-
-
 
     //初始化坦克
     private fun initTankInformation(){
         tankBody.add(getViewById(R.layout.tank))
         tankBarrel.add(getViewById(R.layout.tankbarrel))
-        addTank(0,500,500,0)
+        addTank(0,500.0,500.0,0.0)
         if(gameMode==1) {
             tankBody.add(getViewById(R.layout.tank))
             tankBarrel.add(getViewById(R.layout.tankbarrel))
-            addTank(1, 800, 1000, 45)
+            addTank(1, 800.0, 1000.0, 45.0)
         }
     }
 
@@ -172,8 +151,7 @@ class GameActivity :AppCompatActivity(){
         }
     }
 
-    private fun initClickListener()
-    {
+    private fun initClickListener(){
         buttonbullet1.setOnClickListener {
             if(gunType!=TOOLS.GunType.Shot)
             {
@@ -202,27 +180,39 @@ class GameActivity :AppCompatActivity(){
             }
         }
         atbuttonbrand.setOnClickListener {
-            addBullet(gunType,tankId)
-            Thread{
-                if(gameMode==1) { sendMyMsg(1) }
-            }.start()
+            if( System.currentTimeMillis()-lastShotTime >lastShotInterval) {
+                lastShotTime = System.currentTimeMillis()
+                addBullet(gunType, tankId)
+                Thread {
+                    if (gameMode == 1) {
+                        sendMyMsg(1)
+                    }
+                }.start()
+            }
         }
     }
 
     //信息發送前處理
     private fun infoToByteArrayByJson(tankId: Int,msgType:Int):ByteArray{
         val js:JSONObject = if(msgType==0) {
-            tanks[tankId].toJson().put("msgType", msgType)
+            tanks[tankId].shape.toJson().put("msgType", msgType)
         }else{
-            tanks[tankId].toJson().put("msgType", msgType).put("gunType",getBulletTypeInt(gunType))
+            tanks[tankId].shape.toJson().put("msgType", msgType).put("gunType",getBulletTypeInt(gunType))
         }
         return js.toString().toByteArray()
-}
+    }
 
     //信息接收后
     private fun infoGetJsonByByteArray(tankId: Int){
-        val js = JSONObject(String(listenBuf,0,listenBuf.size))
-        tanks[tankId].copyByJsonFromByteArray(listenBuf)
+        val js:JSONObject
+        if(tankId==1) {
+            js = JSONObject(String(UDPManager.RecvBuf, 0, UDPManager.RecvBuf.size))
+            tanks[tankId].shape.copyByJson(js)
+        }else
+        {
+            js = JSONObject(String(UDPManager.ReplyBuf, 0, UDPManager.ReplyBuf.size))
+            tanks[tankId].shape.copyByJson(js)
+        }
         runOnUiThread {   tanks[tankId].setView(tankBody[tankId],tankBarrel[tankId])}
         if(getIntByStringFromJson(js,"msgType")==1) {
             runOnUiThread {
@@ -231,17 +221,19 @@ class GameActivity :AppCompatActivity(){
         }
     }
 
+    //发送信息，包括类型
     private fun sendMyMsg(msgType:Int){
-        if(tankId==0)send(infoToByteArrayByJson(0,msgType), listenSocket, listenPacket.address, listenPacket.port)
-        else send(infoToByteArrayByJson(1,msgType),listenSocket, TOOLS.sendPacket.address, TOOLS.sendPacket.port)
+        if(tankId==0)UDPManager.sendReplyMsg(infoToByteArrayByJson(0,msgType))
+        else UDPManager.sendMsg(infoToByteArrayByJson(1,msgType))
     }
 
+    //收到信息处理
     private fun recvMsg(){
         if(tankId==0) {
-            recv(listenSocket, listenBuf)
+            UDPManager.recvMsg()
             infoGetJsonByByteArray(1)
         }else{
-            recv(sendSocket,listenBuf)
+            UDPManager.recvReplyMsg()
             infoGetJsonByByteArray(0)
         }
     }
@@ -311,9 +303,9 @@ class GameActivity :AppCompatActivity(){
             val it = bullets[i]
             when (it.updateBulletPosition(myBulletsViews[i])) {
                 TOOLS.CrashType.NoCrash -> {
-
                 }
                 else -> {
+
                     it.bulletLiving = false
                 }
             }
@@ -323,10 +315,10 @@ class GameActivity :AppCompatActivity(){
     }
 
     //添加坦克信息，并初始化View
-    private fun addTank(tankId: Int,x:Int,y:Int,direction:Int)
+    private fun addTank(tankId: Int,x:Double,y:Double,direction:Double)
     {
         tanks.add(Tank(tankId,x,y,direction))//Tank创建
-        tanks[tankId].initInfoAndView(world,tankBody[tankId],tankBarrel[tankId])
+        tanks[tankId].initShapeAndViewParam(world,tankBody[tankId],tankBarrel[tankId])
     }
 
     //添加子彈
@@ -338,6 +330,7 @@ class GameActivity :AppCompatActivity(){
                 myBulletsViews.add(getViewById(R.layout.laserbullet))
                 bullets.add(LaserGun(tankId))
                 bullets[bulletId].initInfoAndView(tanks[tankId],0,world,myBulletsViews[bulletId])
+                lastShotInterval = bullets[bulletId].loadInterval
             }
             TOOLS.GunType.Shot ->{
                 myBulletsViews.add(getViewById(R.layout.shotbullet))
@@ -349,17 +342,19 @@ class GameActivity :AppCompatActivity(){
                 bullets[bulletId+1].initInfoAndView(tanks[tankId],30,world,myBulletsViews[bulletId+1])
                 bullets.add(ShotGun(tankId))
                 bullets[bulletId+2].initInfoAndView(tanks[tankId],-30,world,myBulletsViews[bulletId+2])
+                lastShotInterval = bullets[bulletId].loadInterval
             }
             TOOLS.GunType.Rocket -> {
                 myBulletsViews.add(getViewById(R.layout.rocketbullet))
                 bullets.add(RocketGun(tankId))
                 bullets[bulletId].initInfoAndView(tanks[tankId],0,world,myBulletsViews[bulletId])
+                lastShotInterval = bullets[bulletId].loadInterval
             }
         }
     }
 
     //添加墙，并初始化View
-    private fun addWall(x:Int,y:Int)
+    private fun addWall(x:Double,y:Double)
     {
         walls.add(Wall(x,y,getViewById(R.layout.wall)))
         walls[walls.size-1].initInfoAndView(world)
@@ -368,7 +363,4 @@ class GameActivity :AppCompatActivity(){
     private fun getViewById(ViewId:Int): View {
         return layoutInflater.inflate(ViewId,world,false)
     }
-
-
-
 }

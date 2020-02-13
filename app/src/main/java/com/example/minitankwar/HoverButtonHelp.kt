@@ -1,4 +1,4 @@
-package com.example.minitankwar.activity
+package com.example.minitankwar
 
 import android.os.Handler
 import android.view.MotionEvent
@@ -6,8 +6,6 @@ import android.view.View
 import android.widget.FrameLayout
 import kotlin.math.abs
 import kotlin.math.atan
-
-
 
 //该类用于构建摇杆按钮
 //作者：LC
@@ -29,7 +27,7 @@ open class HoverButtonHelp(private val view: View)
     private var detectInterval:Long = 10  //探测的间隔时间
     private var isMoveDetecting = true
     private var canMove = true
-    var buttonDirection = 0   //摇杆的相对角度
+    var buttonDirection = 0.0   //摇杆的相对角度
 
     //定义按下时要做的事情
     open fun doInDown(){
@@ -46,12 +44,12 @@ open class HoverButtonHelp(private val view: View)
 
     }
 
-    fun setDetectInterval(detectInterval:Long):HoverButtonHelp{
+    fun setDetectInterval(detectInterval:Long): HoverButtonHelp {
         this.detectInterval=detectInterval
         return this
     }
 
-    fun setCanMove(canMove:Boolean):HoverButtonHelp{
+    fun setCanMove(canMove:Boolean): HoverButtonHelp {
         this.canMove=canMove
         return this
     }
@@ -78,7 +76,7 @@ open class HoverButtonHelp(private val view: View)
                             event.rawY.toInt() - opTouchY
                         )
                         buttonDirection =
-                            getDirectionByTan(v.x.toInt(), v.y.toInt(), buttonX, buttonY)
+                            getDirectionByTan(v.x, v.y, buttonX, buttonY)
                     }
                     MotionEvent.ACTION_UP -> {
                         isMoveDetecting = false //设置探测标志位为false，结束探测
@@ -132,11 +130,11 @@ open class HoverButtonHelp(private val view: View)
         }
     }
 
-    private fun getDirectionByTan(x: Int, y: Int, ox: Int, oy: Int): Int {
+    private fun getDirectionByTan(x: Float, y: Float, ox: Int, oy: Int): Double {
         val tanX = x - ox
         val tanY = oy - y
         val tan = abs(tanY / tanX.toDouble())
-        var direction = Math.toDegrees(atan(tan)).toInt()
+        var direction = Math.toDegrees(atan(tan))
         direction = if (tanY > 0) {
             if (tanX < 0) 180 - direction
             else  direction

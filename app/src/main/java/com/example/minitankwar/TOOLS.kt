@@ -5,7 +5,7 @@ import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import org.json.JSONObject
-import java.io.*
+import java.lang.Integer.parseInt
 import java.net.*
 import java.util.*
 import kotlin.math.abs
@@ -18,15 +18,10 @@ object TOOLS {
 
     var tmpTankID:Int = 0
     var gameMode:Int = 0   //0单人 1 双人
-    var listenSocket  = DatagramSocket(12306)
-    lateinit var listenPacket :DatagramPacket
-    val sendSocket = DatagramSocket(12307)
-    lateinit var sendPacket :DatagramPacket
 
     val dp5 = dp(5)
     val dp10 = dp(10)
     val dp13 = dp(13)
-    val dp15 = dp(15)
     val dp30 = dp(30)
     val dp40 = dp(40)
     val dp250 = dp(250)
@@ -40,20 +35,20 @@ object TOOLS {
 
     fun Loge(x:Int,xx:String)
     {
-        Log.e("123",x.toString()+" "+xx)
+        Log.e("123", "$x $xx")
     }
 
 
-    fun dp(dpValue: Int): Int {
+    fun dp(dpValue: Int): Double {
         val scale = Resources.getSystem().displayMetrics.density
-        return (dpValue * scale + 0.5f).toInt()
+        return (dpValue * scale + 0.5f).toDouble()
     }
 
-    fun getDirectionByTan(x: Int, y: Int, ox: Int, oy: Int): Int {
+    fun getDirectionByTan(x: Double, y: Double, ox: Double, oy: Double): Double {
         val tanX = x - ox
         val tanY = oy - y
-        val tan = abs(tanY / tanX.toDouble())
-        var direction = Math.toDegrees(atan(tan)).toInt()
+        val tan = abs(tanY / tanX)
+        var direction = Math.toDegrees(atan(tan))
         direction = if (tanY > 0) {
             if (tanX < 0) 180 - direction
             else  direction
@@ -64,20 +59,20 @@ object TOOLS {
         return direction
     }
 
-    fun setViewPosition(v: View, x:Int, y:Int){
+    fun setViewPosition(v: View, x:Double, y:Double){
         val params = v.layoutParams as FrameLayout.LayoutParams
-        params.setMargins(x, y,0,0)
+        params.setMargins(x.toInt(), y.toInt(),0,0)
         v.layoutParams = params
     }
 
     // 根据Int获取子弹类型
-    fun getBulletType(type:Int):TOOLS.GunType
+    fun getBulletType(type:Int):GunType
     {
-        when(type){
-            1->return TOOLS.GunType.Shot
-            2->return TOOLS.GunType.Rocket
-            3->return TOOLS.GunType.Laser
-            else-> return TOOLS.GunType.Shot
+        return when(type){
+            1-> GunType.Shot
+            2-> GunType.Rocket
+            3-> GunType.Laser
+            else-> GunType.Shot
         }
     }
 
@@ -92,33 +87,31 @@ object TOOLS {
     }
 
 
-    //从Json中用String获取int
+    //从Json中用String获取Double
+    fun getDoubleByStringFromJson(jsonObject: JSONObject, string: String):Double
+    {
+        return jsonObject.getString(string).toDouble()
+    }
+    //从Json中用String获取Int
     fun getIntByStringFromJson(jsonObject: JSONObject, string: String):Int
     {
-        return Integer.parseInt(jsonObject.getString(string))
-    }
-
-
-    fun setViewPosition(v: View, x:Int, y:Int, diffX:Int, diffY:Int){
-        val params = v.layoutParams as FrameLayout.LayoutParams
-        params.setMargins(x+diffX, y+diffY,0,0)
-        v.layoutParams = params
+        return parseInt(jsonObject.getString(string))
     }
 
     //判断点和线的位置，在线上为0，其余为+ 或 -
-    fun dotIsOnLine(dotX:Int,dotY:Int,lx1:Int,ly1:Int,lx2:Int,ly2:Int):Int{
+    private fun dotIsOnLine(dotX:Double,dotY:Double,lx1:Double,ly1:Double,lx2:Double,ly2:Double):Int{
         if(ly1 == ly2) return if(dotY==ly1) 0 else if(dotY>ly1) 1 else -1
         if(lx1 == lx2) return if(dotX==lx1) 0 else if(dotX>lx1) 1 else -1
         val ret = (dotX - lx1)*(lx1-lx2)/(ly1-ly2)+ ly1- dotY
         return when {
-            ret == 0 -> 0
+            ret == 0.0 -> 0
             ret>0 -> return 1
             else -> -1
         }
     }
 
     //判断线和线的位置，两线交叉为true
-    fun lineIsOnLine(Lx1:Int, Ly1:Int, Lx2:Int, Ly2:Int, lx1:Int, ly1:Int, lx2:Int, ly2:Int):Boolean{
+    fun lineIsOnLine(Lx1:Double, Ly1:Double, Lx2:Double, Ly2:Double, lx1:Double, ly1:Double, lx2:Double, ly2:Double):Boolean{
         val ret1 = dotIsOnLine(Lx1,Ly1,lx1,ly1,lx2,ly2)
         val ret2 = dotIsOnLine(Lx2,Ly2,lx1,ly1,lx2,ly2)
         if(ret1==0||ret2==0)return true
@@ -149,45 +142,19 @@ object TOOLS {
         return "0.0.0.0"
     }
 
-    //1.发送的字符，2.发送使用的DatagramSocket
-    fun send(str: String, socket: DatagramSocket, address:InetAddress, port:Int){
-        val bytes1 = str.toByteArray()
-        val p = DatagramPacket(bytes1, bytes1.size, address, port)
-        socket.send(p)
+    //寻找需要旋转角度最小的旋转方向，顺时针为1，逆时针为-1,相等为0
+    fun getMinRotateDir(_oldDirection:Double,newDirection : Double):Int {
+        val difference = _oldDirection - newDirection
+        if (abs(difference) == 0.0) return 0
+        return when {
+            difference > 180 -> -1
+            difference > 0 -> 1
+            difference > -180 -> -1
+            difference > -360 -> 1
+            else -> 1
+        }
     }
 
-    //1.发送的字符，2.发送使用的DatagramSocket
-    fun send(bytes1: ByteArray, socket: DatagramSocket, address:InetAddress, port:Int){
-        val p = DatagramPacket(bytes1, bytes1.size, address, port)
-        socket.send(p)
-    }
-
-    //1.接受使用的字符，2.接受使用的字符串
-    fun recv(socket: DatagramSocket, receiveBuf: ByteArray): DatagramPacket {
-        val receiverPacket = DatagramPacket(receiveBuf, receiveBuf.size)
-        socket.receive(receiverPacket)
-        return receiverPacket
-    }
-
-    fun objectToByteArray(obj:Any):ByteArray {
-        val bytes :ByteArray
-        val objectOutputStream:ObjectOutputStream
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        objectOutputStream = ObjectOutputStream(byteArrayOutputStream)
-        objectOutputStream.writeObject(obj)
-        objectOutputStream.flush()
-        bytes = byteArrayOutputStream.toByteArray()
-        return bytes
-    }
-
-    fun byteArrayToObject(bytes :ByteArray):Any {
-        val obj:Any
-        val objectInputStream: ObjectInputStream
-        val byteArrayInputStream = ByteArrayInputStream(bytes)
-        objectInputStream = ObjectInputStream(byteArrayInputStream)
-        obj = objectInputStream.readObject()
-        return obj
-    }
 
 
 }

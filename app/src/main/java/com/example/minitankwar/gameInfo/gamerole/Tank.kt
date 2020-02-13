@@ -5,21 +5,28 @@ import android.widget.FrameLayout
 import com.example.minitankwar.TOOLS.dp30
 import com.example.minitankwar.TOOLS.dp40
 import com.example.minitankwar.CrashDetector.Companion.crashDetect
-import com.example.minitankwar.Object2D
+import com.example.minitankwar.baseClass.BaseView2D
 import com.example.minitankwar.TOOLS
-import java.io.Serializable
+import com.example.minitankwar.baseClass.Point
+import com.example.minitankwar.baseClass.Shape
 
-class Tank( val tankId:Int,x: Int, y: Int, direction: Int) :
-    Object2D(x, y, direction, dp40, dp30),Serializable {
+class Tank( val tankId:Int,x: Double, y: Double, direction: Double):BaseView2D(Shape(Point(x, y), direction, dp40, dp30),tankId)
+{
+    private var healthy:Double = 10.0
+    private var speed:Double = 10.0 //移动速度
+    private val angularSpeed:Double = 1.0 //角速度
+    private var barrelDiffDirection:Double =0.0 //炮筒偏移角
 
-    private var healthy:Int = 10
-    private var speed:Int = 10 //移动速度
-    private val angularSpeed:Int = 1 //角速度
-    private var barrelDiffDirection:Int =0 //炮筒偏移角
+    fun updateTankPosition(newDirection: Double,tankBody:View,tankBarrel:View): TOOLS.CrashType {
+        updatePosition( newDirection, speed, angularSpeed)
+        setView(tankBody,tankBarrel)
+        return crashDetect(this)
+    }
 
-    fun updateTankPosition(newDirection: Int,tankBody:View,tankBarrel:View): TOOLS.CrashType {
-        this.copyPositionData(updatePosition(this, newDirection, speed, angularSpeed))
-        updateCenterXY()
+    fun moveBack(tankBody:View,tankBarrel:View): TOOLS.CrashType {
+        speed /= 2
+        shape.move(-speed)
+        speed *= 2
         setView(tankBody,tankBarrel)
         return crashDetect(this)
     }
@@ -32,45 +39,27 @@ class Tank( val tankId:Int,x: Int, y: Int, direction: Int) :
         healthy -= damage
     }
 
-    fun moveBack(tankBody:View,tankBarrel:View): TOOLS.CrashType {
-        direction += 180
-        speed /= 2
-        copyPositionData(updateXY(x,y, direction,speed))
-        direction -= 180
-        speed *= 2
-        updateCenterXY()
-        setView(tankBody,tankBarrel)
-        return crashDetect(this)
+    fun getBarrelDirection():Double{
+        return  (shape.dir + barrelDiffDirection)% 360
     }
 
-    fun getBarrelDirection():Int{
-        return  (direction + barrelDiffDirection)% 360
+    fun updateBarrelDiffDirection(newDirection: Double) {
+        barrelDiffDirection +=getChangeDirection(getBarrelDirection(), newDirection, angularSpeed)
     }
 
-    fun updateBarrelDiffDirection(newDirection: Int) {
-        barrelDiffDirection = updateDirection(this.getBarrelDirection(), newDirection, angularSpeed) - direction
-    }
-
-    fun initInfoAndView(fatherLayout:FrameLayout,tankBody:View,tankBarrel:View)
+    fun initShapeAndViewParam(fatherLayout:FrameLayout,tankBody:View,tankBarrel:View)
     {
-        updateCenterXY()
         setView(tankBody,tankBarrel)
-        addViewTo(fatherLayout,tankBody,tankBarrel)
+        addViewTo(fatherLayout,tankBody)
+        addViewTo(fatherLayout,tankBarrel)
     }
 
     //设置tank布局位置
     fun setView(tankBody:View,tankBarrel:View){
-        TOOLS.setViewPosition(tankBody, x, y)
-        TOOLS.setViewPosition(tankBarrel, x, y)
-       tankBody.rotation = -direction.toFloat()
-       tankBarrel.rotation = -getBarrelDirection().toFloat()
-    }
-
-    //更新tank布局到父布局
-    fun addViewTo(fatherLayout:FrameLayout,tankBody:View,tankBarrel:View)
-    {
-        fatherLayout.addView(tankBody)
-        fatherLayout.addView(tankBarrel)
+        setViewParam(tankBody)
+        setViewParam(tankBarrel)
+        tankBody.rotation = (-shape.dir).toFloat()
+        tankBarrel.rotation = -getBarrelDirection().toFloat()
     }
 
     //remove tank布局从父布局
@@ -80,12 +69,5 @@ class Tank( val tankId:Int,x: Int, y: Int, direction: Int) :
         fatherLayout.removeView(tankBarrel)
     }
 
-    fun getCenterX():Int{
-        return shape.centerX
-    }
-
-    fun getCenterY():Int{
-        return shape.centerY
-    }
 
 }

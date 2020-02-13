@@ -2,28 +2,24 @@ package com.example.minitankwar.gameInfo.gamerole
 
 import android.view.View
 import android.widget.FrameLayout
-import com.example.minitankwar.Object2D
-import com.example.minitankwar.Shape
+import com.example.minitankwar.baseClass.BaseView2D
 import com.example.minitankwar.TOOLS
 import com.example.minitankwar.TOOLS.dp40
+import com.example.minitankwar.baseClass.Point
+import com.example.minitankwar.baseClass.Shape
 
-class Wall(x:Int,y:Int,val view: View): Object2D(x,y,0,dp40,dp40){
+class Wall(x:Double,y:Double,val view: View): BaseView2D(Shape(Point(x,y),0.0,dp40,dp40),-1){
     private var healthy = 999
 
     fun initInfoAndView(fatherLayout: FrameLayout)
     {
-        updateCenterXY()
-        setView()
+        setViewParam(view)
         addViewTo(fatherLayout)
     }
 
-    //设置tank布局位置
-    fun setView(){
-        TOOLS.setViewPosition(view, x, y)
-    }
 
     //更新tank布局到父布局
-    fun addViewTo(fatherLayout:FrameLayout)
+    private fun addViewTo(fatherLayout:FrameLayout)
     {
         fatherLayout.addView(view)
     }

@@ -4,8 +4,6 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.example.minitankwar.R
-import com.example.minitankwar.TOOLS
-import com.example.minitankwar.TOOLS.sendSocket
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -23,14 +21,5 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, GameActivity::class.java)
             startActivity(intent)
         }
-
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        TOOLS.listenSocket.close()
-        sendSocket.close()
-    }
-
-
 }

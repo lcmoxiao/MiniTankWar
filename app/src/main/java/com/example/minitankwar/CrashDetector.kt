@@ -1,9 +1,12 @@
 package com.example.minitankwar
 
 
+import com.example.minitankwar.TOOLS.Loge
 import com.example.minitankwar.TOOLS.dp10
 import com.example.minitankwar.TOOLS.dp410
-import com.example.minitankwar.gameInfo.gamerole.Bullet
+import com.example.minitankwar.baseinterface.IBaseView2D
+import com.example.minitankwar.baseinterface.IPoint
+import com.example.minitankwar.gameInfo.gamerole.buttle.Bullet
 import com.example.minitankwar.gameInfo.gamerole.Tank
 import com.example.minitankwar.gameInfo.gamerole.Wall
 
@@ -16,41 +19,41 @@ class CrashDetector{
         var bullets:ArrayList<Bullet> = ArrayList()
         var walls:ArrayList<Wall> = ArrayList()
 
-        private fun lineIsOnLine(obj1:Object2D,obj2:Object2D,obj3:Object2D,obj4:Object2D):Boolean{
+        private fun lineIsOnLine(obj1: IPoint, obj2: IPoint, obj3: IPoint, obj4: IPoint):Boolean{
              return TOOLS.lineIsOnLine(obj1.x,obj1.y,obj2.x,obj2.y,obj3.x,obj3.y,obj4.x,obj4.y)
         }
 
-        fun crashDetect(object2D: Object2D): TOOLS.CrashType
+        fun crashDetect(baseView2D: IBaseView2D): TOOLS.CrashType
         {
-            if(crashTank(object2D))
+            if(crashTank(baseView2D))
             {
                 return TOOLS.CrashType.Tank
             }
-            if(crashWall(object2D))
+            if(crashWall(baseView2D))
             {
                 return TOOLS.CrashType.Wall
             }
-            if(crashBorder(object2D)) {
+            if(crashBorder(baseView2D)) {
                 return TOOLS.CrashType.Border
             }
             return TOOLS.CrashType.NoCrash
         }
 
         //判断该Position会不会和边界碰撞 (坦克||子弹)
-        private fun crashBorder(object2D: Object2D):Boolean{
-            object2D.shape.getABCD(object2D.direction).forEach { if(it.x<dp10||it.x>(1080-dp10)||it.y<dp10||it.y>dp410)return true }
+        private fun crashBorder(baseView2D: IBaseView2D):Boolean{
+            baseView2D.shape.getABCD().forEach {
+                if(it.x<dp10||it.x>(1080-dp10)||it.y<dp10||it.y>dp410)return true }
             return false
         }
 
-        private fun crashWall(object2D: Object2D):Boolean{
+        private fun crashWall(baseView2D: IBaseView2D):Boolean{
             var wallId = 0
             while(wallId< walls.size)
             {
                 val shape = walls[wallId].shape
-                val direction =  walls[wallId].direction
-                val coordinates = shape.getLimitCoordinates(direction)
-                val wallABCD = shape.getOrderABCD(direction)
-                val bulletABCD = object2D.shape.getOrderABCD(object2D.direction)
+                val coordinates = shape.getLimitCoordinates()
+                val wallABCD = shape.getOrderABCD()
+                val bulletABCD = baseView2D.shape.getOrderABCD()
                 bulletABCD.forEach{ position->
                     //判断是否在最大范围内
                     if (position.x<coordinates[0].x&&position.x>coordinates[2].x&&position.y<coordinates[1].y&&position.y>coordinates[3].y)
@@ -79,19 +82,18 @@ class CrashDetector{
             return false
         }
 
-        private fun crashTank(object2D: Object2D):Boolean{
+        private fun crashTank(baseView2D: IBaseView2D):Boolean{
             var tankId = 0
             while(tankId<tanks.size)
             {
                 val shape = tanks[tankId].shape
-                val direction = tanks[tankId].direction
-                val coordinates = shape.getLimitCoordinates(direction)
-                if(object2D is Bullet && object2D.shotTankId ==  tankId) {
+                val coordinates = shape.getLimitCoordinates()
+                if(baseView2D is Bullet && baseView2D.shotTankId ==  tanks[tankId].tankId) {
                     tankId++
                     continue//子弹不打自己
                 }
-                val tankABCD = shape.getOrderABCD(direction)
-                val bulletABCD = object2D.shape.getOrderABCD(object2D.direction)
+                val tankABCD = shape.getOrderABCD()
+                val bulletABCD = baseView2D.shape.getOrderABCD()
                 bulletABCD.forEach{ position->
                     //判断是否在最大范围内
                     if (position.x<coordinates[0].x&&position.x>coordinates[2].x&&position.y<coordinates[1].y&&position.y>coordinates[3].y)
@@ -105,8 +107,8 @@ class CrashDetector{
                             j2 = 1
                             while(i2<4){
                                 if(lineIsOnLine(bulletABCD[i2],bulletABCD[j2],tankABCD[i1],tankABCD[j1])) {
-                                    if(object2D is Bullet)
-                                    tanks[tankId].hurt(object2D .damage)
+                                    if(baseView2D is Bullet)
+                                    tanks[tankId].hurt(baseView2D .damage)
                                     return true
                                 }
                                 i2++
