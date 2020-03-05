@@ -62,6 +62,13 @@ class Shape(override var cPoint: IPoint, override var dir: Double, override var 
         return this
     }
 
+    override fun getX():Double {
+        return cPoint.x
+    }
+
+    override fun getY():Double {
+        return cPoint.y
+    }
 
     //获得点位置时，要传入旋转角方向
     private fun getA(): IPoint

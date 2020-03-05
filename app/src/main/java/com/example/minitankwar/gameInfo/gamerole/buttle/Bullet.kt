@@ -7,20 +7,16 @@ import com.example.minitankwar.baseClass.BaseView2D
 import com.example.minitankwar.TOOLS
 import com.example.minitankwar.baseClass.Point
 import com.example.minitankwar.baseClass.Shape
-import com.example.minitankwar.baseinterface.IBaseView2D
 import com.example.minitankwar.gameInfo.gamerole.Tank
 
 abstract class Bullet(length:Double,width:Double,val shotTankId:Int)
     :BaseView2D(Shape(Point(0.0,0.0),0.0,length,width),shotTankId)
 {
-
     abstract val damage:Int
     abstract val speed:Double
     abstract val type:Int
     abstract val loadInterval:Long
     var bulletLiving = true
-
-
 
     //根据tank信息，设置子弹信息
     abstract fun setShotPosition(tank: Tank, diffRotation:Int)
@@ -38,5 +34,10 @@ abstract class Bullet(length:Double,width:Double,val shotTankId:Int)
         setViewParam(bulletView)
         addViewTo(fatherLayout,bulletView)
     }
+
+
+
+
+
 
 }

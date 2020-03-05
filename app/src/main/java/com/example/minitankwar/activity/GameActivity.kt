@@ -1,5 +1,6 @@
 package com.example.minitankwar.activity
 
+import android.animation.ValueAnimator
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
@@ -11,14 +12,14 @@ import com.example.minitankwar.CrashDetector.Companion.walls
 import com.example.minitankwar.HoverButtonHelp
 import com.example.minitankwar.R
 import com.example.minitankwar.TOOLS
-import com.example.minitankwar.TOOLS.Loge
 import com.example.minitankwar.TOOLS.dp250
 import com.example.minitankwar.TOOLS.dp40
 import com.example.minitankwar.TOOLS.gameMode
 import com.example.minitankwar.TOOLS.getBulletType
 import com.example.minitankwar.TOOLS.getBulletTypeInt
 import com.example.minitankwar.TOOLS.getIntByStringFromJson
-import com.example.minitankwar.TOOLS.tmpTankID
+import com.example.minitankwar.TOOLS.setViewPosition
+import com.example.minitankwar.TOOLS.meTankID
 import com.example.minitankwar.UDPManager
 import com.example.minitankwar.gameInfo.gamerole.Tank
 import com.example.minitankwar.gameInfo.gamerole.Wall
@@ -29,16 +30,39 @@ import kotlinx.android.synthetic.main.activity_game.*
 import org.json.JSONObject
 
 
-class GameActivity :AppCompatActivity(){
+class GameActivity :AppCompatActivity()
+{
     private var tankBody  = ArrayList<View>()
     private var tankBarrel   = ArrayList<View>()
     private val myBulletsViews = ArrayList<View>()
     private var lastShotTime:Long = 0    //上一次射击的时间
     private var lastShotInterval:Long = 0    //射击冷却时间
-    private val scanIng = 999
+    private val scanIng = 999   //handler循环命令
     //子弹类别
     private var gunType = TOOLS.GunType.Shot
     private var lastGunType = TOOLS.GunType.Shot
+    //这局的坦克ID
+    private var tankId: Int = meTankID
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_game)
+        initHoverButton()
+        initGunButtonView()
+        initTankInformation()
+        initWallInformation()
+        initClickListener()
+        //子弹扫描
+        bulletScanHandler.sendEmptyMessage(scanIng)
+        tankScanHandler.sendEmptyMessage(scanIng)
+        //信息接收
+        Thread{
+            while(gameMode==1) {
+                recvMsg()
+            }
+        }.start()
+    }
+
     //摇杆初始化
     inner class MoveButton(view:View): HoverButtonHelp(view){
         override fun doInHovering() {
@@ -73,44 +97,50 @@ class GameActivity :AppCompatActivity(){
             if(gameMode==1) Thread{ sendMyMsg(0) }.start()
         }
     }
-
-    //坦克ID
-    var tankId: Int = tmpTankID
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_game)
-        initHoverButton()
-        initGunButtonView()
-        initTankInformation()
-        initWallInformation()
-        initClickListener()
-        //子弹扫描
-        bulletScanHandler.sendEmptyMessage(scanIng)
-        tankScanHandler.sendEmptyMessage(scanIng)
-        //信息接收
-        if(gameMode==1)
-        Thread{
-            while(true) {
-                recvMsg()
+    //按钮初始化
+    private fun initClickListener(){
+        atbuttonbrand.setOnClickListener {
+            if( System.currentTimeMillis()-lastShotTime >lastShotInterval) {
+                lastShotTime = System.currentTimeMillis()
+                addBullet(gunType, tankId)
+                if (gameMode == 1) Thread { sendMyMsg(1) }.start()  //多人游戏则发出射击信息
             }
-        }.start()
+        }
+        buttonbullet1.setOnClickListener {
+            if(gunType!=TOOLS.GunType.Shot)
+            {
+                lastGunType = gunType
+                gunType = TOOLS.GunType.Shot
+                it.background = getDrawable(R.drawable.checkbullet)
+                unCheckButtonView(lastGunType)
+            }
+        }
+        buttonbullet2.setOnClickListener {
+            if(gunType!=TOOLS.GunType.Rocket)
+            {
+                lastGunType = gunType
+                gunType = TOOLS.GunType.Rocket
+                it.background = getDrawable(R.drawable.checkbullet)
+                unCheckButtonView(lastGunType)
+            }
+        }
+        buttonbullet3.setOnClickListener {
+            if(gunType!=TOOLS.GunType.Laser)
+            {
+                lastGunType = gunType
+                gunType = TOOLS.GunType.Laser
+                it.background = getDrawable(R.drawable.checkbullet)
+                unCheckButtonView(lastGunType)
+            }
+        }
     }
+
 
     private fun initWallInformation() {
         addWall(dp250,dp250)
         addWall(dp40,dp250)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        world.removeAllViews()
-        tankBody.clear()
-        tankBarrel.clear()
-        myBulletsViews.clear()
-        walls.clear()
-        bullets.clear()
-        tanks.clear()
-    }
 
     //初始化悬停
     private fun initHoverButton(){
@@ -151,46 +181,7 @@ class GameActivity :AppCompatActivity(){
         }
     }
 
-    private fun initClickListener(){
-        buttonbullet1.setOnClickListener {
-            if(gunType!=TOOLS.GunType.Shot)
-            {
-                lastGunType = gunType
-                gunType = TOOLS.GunType.Shot
-                it.background = getDrawable(R.drawable.checkbullet)
-                unCheckButtonView(lastGunType)
-            }
-        }
-        buttonbullet2.setOnClickListener {
-            if(gunType!=TOOLS.GunType.Rocket)
-            {
-                lastGunType = gunType
-                gunType = TOOLS.GunType.Rocket
-                it.background = getDrawable(R.drawable.checkbullet)
-                unCheckButtonView(lastGunType)
-            }
-        }
-        buttonbullet3.setOnClickListener {
-            if(gunType!=TOOLS.GunType.Laser)
-            {
-                lastGunType = gunType
-                gunType = TOOLS.GunType.Laser
-                it.background = getDrawable(R.drawable.checkbullet)
-                unCheckButtonView(lastGunType)
-            }
-        }
-        atbuttonbrand.setOnClickListener {
-            if( System.currentTimeMillis()-lastShotTime >lastShotInterval) {
-                lastShotTime = System.currentTimeMillis()
-                addBullet(gunType, tankId)
-                Thread {
-                    if (gameMode == 1) {
-                        sendMyMsg(1)
-                    }
-                }.start()
-            }
-        }
-    }
+
 
     //信息發送前處理
     private fun infoToByteArrayByJson(tankId: Int,msgType:Int):ByteArray{
@@ -252,14 +243,16 @@ class GameActivity :AppCompatActivity(){
 
     //扫描坦克生死,并刷新UI
     private fun tankScan(){
-        if(tanks.size<=1)return
+        if(gameMode==0)return
         when {
             tanks[1].isDead() -> {
+                gameMode=0
                 tanks[1].removeViewFrom(world,tankBody[1],tankBarrel[1])
                 if(tankId==0) Toast.makeText(baseContext, "you win", Toast.LENGTH_SHORT).show()
                 else Toast.makeText(baseContext, "you dead", Toast.LENGTH_SHORT).show()
             }
             tanks[0].isDead() -> {
+                gameMode=0
                 tanks[0].removeViewFrom(world,tankBody[0],tankBarrel[0])
                 if(tankId==0) Toast.makeText(baseContext, "you dead", Toast.LENGTH_SHORT).show()
                 else Toast.makeText(baseContext, "you win", Toast.LENGTH_SHORT).show()
@@ -280,6 +273,24 @@ class GameActivity :AppCompatActivity(){
         }
     }
 
+    //子弹爆炸动画
+    private fun boom(x:Double,y:Double,size:Double){
+        val a = layoutInflater.inflate(R.layout.boom,world,false)
+        runOnUiThread {
+            setViewPosition(a,x,y)
+            world.addView(a)
+        }
+        val valueAnimator= ValueAnimator.ofFloat(5.0.toFloat(),10.0.toFloat(),2*size.toFloat())
+        valueAnimator.duration = 100
+        valueAnimator.addUpdateListener {
+            a.scaleX = it .animatedValue as Float
+            a.scaleY = it .animatedValue as Float
+            a.requestLayout()
+            if(it .animatedValue as Float==2*size.toFloat()) runOnUiThread { world.removeView(a) }
+        }
+        valueAnimator.start()
+    }
+
     //扫描死亡的子弹并清除，并检测是否没有了子弹而停止扫描
     private fun bulletScan(){
         var i = 0
@@ -288,6 +299,7 @@ class GameActivity :AppCompatActivity(){
         {
             val it = bullets[i]
             if (!it.bulletLiving) {
+                boom(bullets[i].shape.getX(),bullets[i].shape.getY(), bullets[i].shape.width)
                 world.removeView(myBulletsViews[i])
                 bullets.remove(it)
                 myBulletsViews.removeAt(i)
@@ -305,7 +317,6 @@ class GameActivity :AppCompatActivity(){
                 TOOLS.CrashType.NoCrash -> {
                 }
                 else -> {
-
                     it.bulletLiving = false
                 }
             }
@@ -325,21 +336,14 @@ class GameActivity :AppCompatActivity(){
     private fun addBullet(gunType: TOOLS.GunType, tankId: Int){
         val bulletId = bullets.size
         when (gunType) {
-            TOOLS.GunType.Laser ->
-            {
-                myBulletsViews.add(getViewById(R.layout.laserbullet))
-                bullets.add(LaserGun(tankId))
-                bullets[bulletId].initInfoAndView(tanks[tankId],0,world,myBulletsViews[bulletId])
-                lastShotInterval = bullets[bulletId].loadInterval
-            }
             TOOLS.GunType.Shot ->{
                 myBulletsViews.add(getViewById(R.layout.shotbullet))
-                myBulletsViews.add(getViewById(R.layout.shotbullet))
-                myBulletsViews.add(getViewById(R.layout.shotbullet))
                 bullets.add(ShotGun(tankId))
                 bullets[bulletId].initInfoAndView(tanks[tankId],0,world,myBulletsViews[bulletId])
+                myBulletsViews.add(getViewById(R.layout.shotbullet))
                 bullets.add(ShotGun(tankId))
                 bullets[bulletId+1].initInfoAndView(tanks[tankId],30,world,myBulletsViews[bulletId+1])
+                myBulletsViews.add(getViewById(R.layout.shotbullet))
                 bullets.add(ShotGun(tankId))
                 bullets[bulletId+2].initInfoAndView(tanks[tankId],-30,world,myBulletsViews[bulletId+2])
                 lastShotInterval = bullets[bulletId].loadInterval
@@ -347,6 +351,13 @@ class GameActivity :AppCompatActivity(){
             TOOLS.GunType.Rocket -> {
                 myBulletsViews.add(getViewById(R.layout.rocketbullet))
                 bullets.add(RocketGun(tankId))
+                bullets[bulletId].initInfoAndView(tanks[tankId],0,world,myBulletsViews[bulletId])
+                lastShotInterval = bullets[bulletId].loadInterval
+            }
+            TOOLS.GunType.Laser ->
+            {
+                myBulletsViews.add(getViewById(R.layout.laserbullet))
+                bullets.add(LaserGun(tankId))
                 bullets[bulletId].initInfoAndView(tanks[tankId],0,world,myBulletsViews[bulletId])
                 lastShotInterval = bullets[bulletId].loadInterval
             }
@@ -362,5 +373,17 @@ class GameActivity :AppCompatActivity(){
 
     private fun getViewById(ViewId:Int): View {
         return layoutInflater.inflate(ViewId,world,false)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        world.removeAllViews()
+        tankBody.clear()
+        tankBarrel.clear()
+        myBulletsViews.clear()
+        walls.clear()
+        bullets.clear()
+        tanks.clear()
+        gameMode=0
     }
 }

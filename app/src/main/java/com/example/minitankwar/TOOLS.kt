@@ -16,7 +16,7 @@ object TOOLS {
     enum class CrashType{Tank,Wall,Border,NoCrash}
     enum class GunType{Laser,Rocket,Shot}
 
-    var tmpTankID:Int = 0
+    var meTankID:Int = 0
     var gameMode:Int = 0   //0单人 1 双人
 
     val dp5 = dp(5)
@@ -136,7 +136,7 @@ object TOOLS {
                     }
                 }
             }
-        } catch (e: SocketException) {
+        } catch (e: Throwable) {
             e.printStackTrace()
         }
         return "0.0.0.0"

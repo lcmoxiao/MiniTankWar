@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainactivity"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
@@ -8,10 +9,13 @@
     tools:context=".activity.MainActivity">
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/game_start"
-        android:layout_marginBottom="20dp"
+        android:layout_width="290dp"
+        android:layout_height="70dp"
+        android:gravity="center"
+        android:text="@string/mini_tank_war"
+        android:textSize="30sp"
+        android:layout_marginBottom="60dp"
+        android:background="@drawable/laserbullet"
         />
 
     <TextView
@@ -19,14 +23,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
-        android:text="@string/newagame"
+        android:textSize="20sp"
+        android:text="@string/multi_mode"
     />
 
     <TextView
         android:id="@+id/joingame"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/joingame"
+        android:text="@string/solo_mode"
+        android:textSize="20sp"
+        android:layout_marginBottom="80dp"
    />
 
 

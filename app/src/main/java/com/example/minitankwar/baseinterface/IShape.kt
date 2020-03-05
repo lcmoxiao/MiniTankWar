@@ -17,7 +17,10 @@ interface IShape {
     fun rotate(rotation:Double): IShape  //旋转
     fun move(length:Double): IShape  //移动
 
+    fun getX():Double
+
     fun clone(): IShape
     fun toJson(): JSONObject
     fun copyByJson(js: JSONObject): IShape
+    fun getY(): Double
 }

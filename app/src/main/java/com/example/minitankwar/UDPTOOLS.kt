@@ -8,7 +8,7 @@ object UDPManager{
     private lateinit var listenSocket:DatagramSocket
 
     lateinit var listenPacket : DatagramPacket  //等待监听的包
-    private lateinit var sendPacket : DatagramPacket    //发往目的地的包
+    lateinit var sendPacket : DatagramPacket    //发往目的地的包
     val RecvBuf = ByteArray(1024)
     val ReplyBuf = ByteArray(1024)
     private var dstIP = "127.0.0.1" //默认目的IP

@@ -2,27 +2,51 @@ package com.example.minitankwar.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import androidx.appcompat.app.AppCompatActivity
 import com.example.minitankwar.R
+import com.example.minitankwar.TOOLS.Loge
 import com.example.minitankwar.TOOLS.gameMode
 import com.example.minitankwar.TOOLS.getIpAddressString
-import com.example.minitankwar.TOOLS.tmpTankID
+import com.example.minitankwar.TOOLS.meTankID
 import com.example.minitankwar.UDPManager
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_newgame.*
 
 
 
 class NewGameActivity : AppCompatActivity() {
 
-    private var listening = false
+    private var listening:Boolean = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_newgame)
-        meIP.text = ("本地IP:"+getIpAddressString())
+        initInfo()
         initClick()
         UDPManager.init()
     }
+
+    override fun onRestart() {
+        super.onRestart()
+        initInfo()
+    }
+
+    private fun initInfo(){
+        createRoom.text = "创建房间"
+        joinRoom.text = "加入房间"
+        startgame.text="开始游戏"
+        readygame.text = "准备"
+        meIP.text = ("本地IP:"+getIpAddressString())
+        startgame.visibility = INVISIBLE
+        readygame.visibility = INVISIBLE
+        createRoom.isEnabled = true
+        joinRoom.isEnabled = true
+        joinIp.isEnabled = true
+        listening = false
+    }
+
+
 
     private fun initClick()
     {
@@ -38,10 +62,10 @@ class NewGameActivity : AppCompatActivity() {
                             UDPManager.recvMsg()
                             if("join".compareTo(String(UDPManager.RecvBuf, 0, 4))==0) {
                                 runOnUiThread {
-                                    createRoom.text =("已连接:"+UDPManager.getHisIP().address)
+                                    createRoom.text =("已连接:"+UDPManager.getHisIP())
                                     joinRoom.text = "等待对方准备"
                                 }
-                                tmpTankID = 0
+                                meTankID = 0
                                 gameMode = 1
                                 UDPManager.sendReplyMsg("joinover")
                             }else  if("ready".compareTo(String(UDPManager.RecvBuf, 0, 5))==0) {
@@ -66,7 +90,7 @@ class NewGameActivity : AppCompatActivity() {
                 UDPManager.recvReplyMsg()
                 if("joinover".compareTo(String(UDPManager.ReplyBuf, 0, 8))==0)
                 {
-                    tmpTankID = 1
+                    meTankID = 1
                     gameMode = 1
                     runOnUiThread {
                         readygame.visibility = VISIBLE
@@ -80,6 +104,10 @@ class NewGameActivity : AppCompatActivity() {
 
         startgame.setOnClickListener {
             Thread{ run { UDPManager.sendReplyMsg("start") } }.start()
+            if(UDPManager.listenPacket.address.toString().compareTo(UDPManager.getHisIP().toString())==0) {
+                meTankID = 0
+                gameMode = 0
+            }
             val intent = Intent(this, GameActivity::class.java)
             startActivity(intent)
         }
@@ -94,8 +122,10 @@ class NewGameActivity : AppCompatActivity() {
                     readygame.text = "已准备，等待房主开始"
                 }
                 UDPManager.recvReplyMsg()
-                val intent = Intent(this, GameActivity::class.java)
-                startActivity(intent)
+                if(UDPManager.listenPacket.address.toString().compareTo(UDPManager.getHisIP().toString())!=0) {
+                    val intent = Intent(this, GameActivity::class.java)
+                    startActivity(intent)
+                }
             } }.start()
         }
 
@@ -104,5 +134,7 @@ class NewGameActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         listening = false
+        gameMode = 0
+        meTankID = 0
     }
 }

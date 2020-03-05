@@ -7,7 +7,7 @@
         android:id="@+id/bulletView"
         android:layout_width="26dp"
         android:layout_height="10dp"
-        android:src="@drawable/rocketbuttle"
+        android:background="@drawable/rocketbuttle"
         android:contentDescription="@string/all_bullet_drawing_view" />
 
 

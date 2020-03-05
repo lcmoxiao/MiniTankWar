@@ -9,4 +9,9 @@
     <string name="_1">1</string>
     <string name="_2">2</string>
     <string name="_3">3</string>
+    <string name="boom">BOOM</string>
+    <string name="_192_168_3_18">192.168.3.18</string>
+    <string name="solo_mode">SOLO MODE</string>
+    <string name="multi_mode">MULTI MODE</string>
+    <string name="mini_tank_war">Mini Tank War</string>
 </resources>

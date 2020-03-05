@@ -1,7 +1,5 @@
 package com.example.minitankwar
 
-
-import com.example.minitankwar.TOOLS.Loge
 import com.example.minitankwar.TOOLS.dp10
 import com.example.minitankwar.TOOLS.dp410
 import com.example.minitankwar.baseinterface.IBaseView2D
